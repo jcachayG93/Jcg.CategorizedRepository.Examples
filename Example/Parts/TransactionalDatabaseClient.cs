@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 namespace Example.Parts
 {
     public class TransactionalDatabaseClient : ITransactionalDatabaseClient<
-        CustomerDataModel, Lookup>
+        CustomerDataModel, CustomerLookup>
     {
         public TransactionalDatabaseClient(
             IInMemoryDatabase database)
@@ -54,10 +54,10 @@ namespace Example.Parts
         }
 
 
-        public Task<IETagDto<CategoryIndex<Lookup>>?> GetCategoryIndex(
+        public Task<IETagDto<CategoryIndex<CustomerLookup>>?> GetCategoryIndex(
             string categoryKey, CancellationToken cancellationToken)
         {
-            return Task.Run<IETagDto<CategoryIndex<Lookup>>?>(() =>
+            return Task.Run<IETagDto<CategoryIndex<CustomerLookup>>?>(() =>
             {
                 lock (LockObject)
                 {
@@ -69,19 +69,20 @@ namespace Example.Parts
                     }
 
                     var payload =
-                        DeserializeOrThrow<CategoryIndex<Lookup>>(
+                        DeserializeOrThrow<CategoryIndex<CustomerLookup>>(
                             record.Payload);
 
                     payload = Clone(payload);
 
-                    return new ETagDto<CategoryIndex<Lookup>>(record.Etag,
+                    return new ETagDto<CategoryIndex<CustomerLookup>>(
+                        record.Etag,
                         payload);
                 }
             });
         }
 
         public Task UpsertCategoryIndex(string categoryKey, string eTag,
-            CategoryIndex<Lookup> categoryIndex,
+            CategoryIndex<CustomerLookup> categoryIndex,
             CancellationToken cancellationToken)
         {
             return Task.Run(() =>
@@ -149,11 +150,12 @@ namespace Example.Parts
             };
         }
 
-        private CategoryIndex<Lookup> Clone(CategoryIndex<Lookup> input)
+        private CategoryIndex<CustomerLookup> Clone(
+            CategoryIndex<CustomerLookup> input)
         {
             var lookups = input.Lookups
                 .Select(l =>
-                    new LookupDto<Lookup>
+                    new LookupDto<CustomerLookup>
                     {
                         Key = l.Key,
                         IsDeleted = l.IsDeleted,
@@ -167,7 +169,7 @@ namespace Example.Parts
             };
         }
 
-        private Lookup Clone(Lookup input)
+        private CustomerLookup Clone(CustomerLookup input)
         {
             return new()
             {

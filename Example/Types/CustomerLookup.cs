@@ -1,6 +1,6 @@
 ﻿namespace Example.Types;
 
-public class Lookup
+public class CustomerLookup
 {
     public Guid CustomerId { get; set; }
 

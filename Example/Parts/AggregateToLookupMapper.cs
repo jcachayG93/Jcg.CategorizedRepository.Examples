@@ -5,10 +5,10 @@ namespace Example.Parts
 {
     public class
         AggregateToLookupMapper : IAggregateToLookupMapper<CustomerDataModel,
-            Lookup>
+            CustomerLookup>
     {
         /// <inheritdoc />
-        public Lookup ToLookup(CustomerDataModel aggregate)
+        public CustomerLookup ToLookup(CustomerDataModel aggregate)
         {
             return new()
             {
