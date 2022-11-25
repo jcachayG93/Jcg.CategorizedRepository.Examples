@@ -25,7 +25,6 @@ namespace Example.Parts
         {
             return new()
             {
-                Key = aggregate.Id.ToString(),
                 Id = aggregate.Id,
                 Name = aggregate.Name,
                 Orders = aggregate.Orders.Select(Map).ToArray()

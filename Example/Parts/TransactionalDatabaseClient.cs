@@ -1,6 +1,7 @@
 ﻿using Example.Database;
 using Example.Types;
 using Jcg.CategorizedRepository.Api;
+using Jcg.CategorizedRepository.Api.DatabaseClient;
 using Newtonsoft.Json;
 
 namespace Example.Parts
@@ -38,17 +39,20 @@ namespace Example.Parts
             });
         }
 
-        public Task UpsertAggregateAsync(string eTag,
-            CustomerDataModel aggregate, CancellationToken cancellationToken)
+        /// <inheritdoc />
+        public Task UpsertAggregateAsync(string key, string eTag,
+            CustomerDataModel aggregate,
+            CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
                 lock (LockObject)
                 {
-                    AddOperation(aggregate.Key, eTag, Clone(aggregate));
+                    AddOperation(key, eTag, Clone(aggregate));
                 }
             });
         }
+
 
         public Task<IETagDto<CategoryIndex<Lookup>>?> GetCategoryIndex(
             string categoryKey, CancellationToken cancellationToken)
@@ -139,7 +143,6 @@ namespace Example.Parts
 
             return new()
             {
-                Key = input.Key,
                 Id = input.Id,
                 Name = input.Name,
                 Orders = orders
@@ -148,20 +151,29 @@ namespace Example.Parts
 
         private CategoryIndex<Lookup> Clone(CategoryIndex<Lookup> input)
         {
-            var lookups = input.Lookups.Select(l =>
-                new Lookup
-                {
-                    CustomerId = l.CustomerId,
-                    Name = l.Name,
-                    NumberOfOrders = l.NumberOfOrders,
-                    Key = l.Key,
-                    IsDeleted = l.IsDeleted,
-                    DeletedTimeStamp = l.DeletedTimeStamp
-                });
+            var lookups = input.Lookups
+                .Select(l =>
+                    new LookupDto<Lookup>
+                    {
+                        Key = l.Key,
+                        IsDeleted = l.IsDeleted,
+                        DeletedTimeStamp = l.DeletedTimeStamp,
+                        PayLoad = Clone(l.PayLoad)
+                    }).ToArray();
 
             return new()
             {
                 Lookups = lookups
+            };
+        }
+
+        private Lookup Clone(Lookup input)
+        {
+            return new()
+            {
+                CustomerId = input.CustomerId,
+                Name = input.Name,
+                NumberOfOrders = input.NumberOfOrders
             };
         }
 

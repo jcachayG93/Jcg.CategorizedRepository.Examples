@@ -15,7 +15,7 @@ namespace Example.Parts
                 CustomerId = aggregate.Id,
                 Name = aggregate.Name,
                 NumberOfOrders = aggregate.Orders.Count()
-            }
+            };
         }
     }
 }
