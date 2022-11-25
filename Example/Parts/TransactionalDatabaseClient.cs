@@ -1,79 +1,116 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Example.Database;
-using Example.Domain;
+﻿using Example.Database;
 using Example.Types;
 using Jcg.CategorizedRepository.Api;
 using Newtonsoft.Json;
 
 namespace Example.Parts
 {
-    public class TransactionalDatabaseClient : ITransactionalDatabaseClient<CustomerDataModel, Lookup>
+    public class TransactionalDatabaseClient : ITransactionalDatabaseClient<
+        CustomerDataModel, Lookup>
     {
-        private readonly IInMemoryDatabase _database;
-        private static readonly object LockObject = new();
-
         public TransactionalDatabaseClient(
             IInMemoryDatabase database)
         {
             _database = database;
         }
-        public Task<IETagDto<CustomerDataModel>?> GetAggregateAsync(string key, CancellationToken cancellationToken)
+
+        public Task<IETagDto<CustomerDataModel>?> GetAggregateAsync(string key,
+            CancellationToken cancellationToken)
         {
-     
-                return Task.Run<IETagDto<CustomerDataModel>?>(() =>
+            return Task.Run<IETagDto<CustomerDataModel>?>(() =>
+            {
+                lock (LockObject)
                 {
-                    lock (LockObject)
+                    var record = _database.GetData(key);
+
+                    if (record is null)
                     {
-                        var record = _database.GetData(key);
-
-                        if (record is null)
-                        {
-                            return null;
-                        }
-
-                        var payload = DeserializeOrThrow<CustomerDataModel>(record.Payload);
-
-                        payload = Clone(payload);
-
-                        return new ETagDto<CustomerDataModel>(record.Etag, payload);
+                        return null;
                     }
-                });
-            
+
+                    var payload =
+                        DeserializeOrThrow<CustomerDataModel>(record.Payload);
+
+                    payload = Clone(payload);
+
+                    return new ETagDto<CustomerDataModel>(record.Etag, payload);
+                }
+            });
         }
 
-        public Task UpsertAggregateAsync(string eTag, CustomerDataModel aggregate, CancellationToken cancellationToken)
+        public Task UpsertAggregateAsync(string eTag,
+            CustomerDataModel aggregate, CancellationToken cancellationToken)
         {
             return Task.Run(() =>
             {
                 lock (LockObject)
                 {
-                    var operation = new UpsertOperation(aggregate.Key,)
+                    AddOperation(aggregate.Key, eTag, Clone(aggregate));
                 }
-            })
+            });
         }
 
-        public Task<IETagDto<CategoryIndex<Lookup>>?> GetCategoryIndex(string categoryKey, CancellationToken cancellationToken)
+        public Task<IETagDto<CategoryIndex<Lookup>>?> GetCategoryIndex(
+            string categoryKey, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.Run<IETagDto<CategoryIndex<Lookup>>?>(() =>
+            {
+                lock (LockObject)
+                {
+                    var record = _database.GetData(categoryKey);
+
+                    if (record is null)
+                    {
+                        return null;
+                    }
+
+                    var payload =
+                        DeserializeOrThrow<CategoryIndex<Lookup>>(
+                            record.Payload);
+
+                    payload = Clone(payload);
+
+                    return new ETagDto<CategoryIndex<Lookup>>(record.Etag,
+                        payload);
+                }
+            });
         }
 
-        public Task UpsertCategoryIndex(string categoryKey, string eTag, CategoryIndex<Lookup> categoryIndex,
+        public Task UpsertCategoryIndex(string categoryKey, string eTag,
+            CategoryIndex<Lookup> categoryIndex,
             CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.Run(() =>
+            {
+                lock (LockObject)
+                {
+                    AddOperation(categoryKey, eTag, Clone(categoryIndex));
+                }
+            });
         }
 
         public Task CommitTransactionAsync(CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.Run(() =>
+            {
+                lock (LockObject)
+                {
+                    _database.UpsertAndCommit(_operations.Select(o => o.Value)
+                        .ToArray());
+                }
+            });
         }
 
-        private void AddOperation(string key, UpsertOperation operation)
+
+        private void AddOperation(string key, string etag,
+            object data)
         {
+            var payload = JsonConvert.SerializeObject(data);
+
+            var record = new DatabaseRecord(etag, payload);
+
+            var operation = new UpsertOperation(key, record);
+
             if (!_operations.TryAdd(key, operation))
             {
                 _operations[key] = operation;
@@ -94,7 +131,7 @@ namespace Example.Parts
 
         private CustomerDataModel Clone(CustomerDataModel input)
         {
-            var orders = input.Orders.Select(o=>
+            var orders = input.Orders.Select(o =>
                 new OrderDataModel()
                 {
                     Id = o.Id
@@ -122,10 +159,17 @@ namespace Example.Parts
                     DeletedTimeStamp = l.DeletedTimeStamp
                 });
 
-            return new() {Lookups = lookups};
+            return new()
+            {
+                Lookups = lookups
+            };
         }
 
-        private readonly Dictionary<string, UpsertOperation> _operations = new();
+        private static readonly object LockObject = new();
+        private readonly IInMemoryDatabase _database;
+
+        private readonly Dictionary<string, UpsertOperation>
+            _operations = new();
 
         private class ETagDto<T> : IETagDto<T>
         {
