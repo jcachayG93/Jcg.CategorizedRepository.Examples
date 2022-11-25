@@ -9,6 +9,12 @@ namespace Example.Database
 {
     public class InMemoryDatabase : IInMemoryDatabase
     {
+        public DatabaseRecord? GetData(string key)
+        {
+            _data.TryGetValue(key, out var result);
+
+            return result;
+        }
         public void UpsertAndCommit(UpsertOperation[] operations)
         {
             AssertETagMatch(operations);
