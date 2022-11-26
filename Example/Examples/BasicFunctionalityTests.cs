@@ -165,5 +165,57 @@ namespace Example.Examples
 
             restoredAggregate.ShouldBeEquivalentTo(aggregate);
         }
+
+        [Fact]
+        public async Task CommitWasNotCalled_ExistInLocalCacheNotDatabase()
+        {
+            // ************ ARRANGE ************
+
+            await InitializeCategoryIndexInDatabase();
+
+            var sut1 = CreateSut();
+
+            var sut2 = CreateSut();
+
+            var aggregate = RandomCustomerWithOrders();
+
+            // ************ ACT ****************
+
+            await sut1.UpsertAsync(Key, aggregate, CancellationToken.None);
+
+            var restoredAggregateFromSut1 = await sut1.GetAggregateAsync(Key, CancellationToken.None);
+            var restoredAggregateFromSut2 = await sut2.GetAggregateAsync(Key, CancellationToken.None);
+
+            // ************ ASSERT *************
+
+            restoredAggregateFromSut1.Should().NotBeNull();
+            restoredAggregateFromSut2.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task CommitWasCalled_UpdatesDatabase()
+        {
+            // ************ ARRANGE ************
+
+            await InitializeCategoryIndexInDatabase();
+
+            var sut1 = CreateSut();
+
+            var aggregate = RandomCustomerWithOrders();
+
+            await sut1.UpsertAsync(Key, aggregate, CancellationToken.None);
+
+            // ************ ACT ****************
+
+            await sut1.CommitChangesAsync(CancellationToken.None);
+
+            // ************ ASSERT *************
+
+            var sut2 = CreateSut();
+
+            var restoredAggregate = await sut2.GetAggregateAsync(Key, CancellationToken.None);
+
+            restoredAggregate.ShouldBeEquivalentTo(aggregate);
+        }
     }
 }

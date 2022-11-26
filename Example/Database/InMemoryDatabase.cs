@@ -27,7 +27,7 @@ namespace Example.Database
         
         private void AssertETagMatch(UpsertOperation[] operations)
         {
-            if (operations.Any(EtagMatch))
+            if (operations.Any(EtagMismatch))
             {
                 throw new OptimisticConcurrencyException();
             }
@@ -45,26 +45,32 @@ namespace Example.Database
             return operation with {Data = data};
         }
 
-        private bool EtagMatch(UpsertOperation operation)
+        private bool EtagMismatch(UpsertOperation operation)
         {
             if (string.IsNullOrEmpty(operation.Data.Etag))
             {
-                return true;
+                return false;
             }
             if (_data.TryGetValue(operation.Key, out var record))
             {
                 if (record.Etag != operation.Data.Etag)
                 {
-                    return false;
+                    return true;
                 }
             }
 
-            return true;
+            return false;
         }
 
         private void ApplyChanges(UpsertOperation[] operations)
         {
-            throw new NotImplementedException();
+            foreach (var op in operations)
+            {
+                if (!_data.TryAdd(op.Key, op.Data))
+                {
+                    _data[op.Key] = op.Data;
+                }
+            }
         }
 
         private void ApplyChanges(UpsertOperation operation)

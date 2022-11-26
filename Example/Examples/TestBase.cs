@@ -34,6 +34,15 @@ public abstract class TestBase
             lookupMapper);
     }
 
+    protected async Task InitializeCategoryIndexInDatabase()
+    {
+        var sut = CreateSut();
+
+        await sut.InitializeCategoryIndexAsync(CancellationToken.None);
+
+        await sut.CommitChangesAsync(CancellationToken.None);
+    }
+
     protected Customer RandomCustomerWithOrders(int numberOfOrders = 0)
     {
         var result = new Customer(Guid.NewGuid(), Guid.NewGuid().ToString());
