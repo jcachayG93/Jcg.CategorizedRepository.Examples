@@ -141,5 +141,29 @@ namespace Example.Examples
             (await sut.LookupDeletedAsync(CancellationToken.None))
                 .ShouldNotContainOneWithId(aggregate.Id);
         }
+
+        [Fact]
+        public async Task GetAggregate_AggregateIsDeleted_StillWorks()
+        {
+            // ************ ARRANGE ************
+
+            var sut = CreateSut();
+
+            await sut.InitializeCategoryIndexAsync(CancellationToken.None);
+
+            var aggregate = RandomCustomerWithOrders();
+
+            await sut.UpsertAsync(Key, aggregate, CancellationToken.None);
+
+            // ************ ACT ****************
+
+            await sut.DeleteAsync(Key, CancellationToken.None);
+
+            var restoredAggregate = await sut.GetAggregateAsync(Key, CancellationToken.None);
+
+            // ************ ASSERT *************
+
+            restoredAggregate.ShouldBeEquivalentTo(aggregate);
+        }
     }
 }
