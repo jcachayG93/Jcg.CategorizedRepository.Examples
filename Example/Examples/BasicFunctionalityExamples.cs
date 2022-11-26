@@ -1,17 +1,19 @@
-﻿using FluentAssertions;
+﻿using Example.Domain;
+using Example.Types;
+using FluentAssertions;
 using Jcg.CategorizedRepository.Api;
 using Jcg.CategorizedRepository.Api.Exceptions;
 
 namespace Example.Examples
 {
-    public class BasicFunctionalityTests : TestBase
+    public class BasicFunctionalityExamples : TestBase
     {
         [Fact]
         public async Task Initialize_A_Category()
         {
             // ************ ARRANGE ************
 
-            var sut = CreateSut();
+            ICategorizedRepository<Customer, CustomerLookup> sut = CreateSut();
 
             // ************ ACT ****************
 
@@ -19,7 +21,7 @@ namespace Example.Examples
 
             // ************ ASSERT *************
 
-            var result =
+            IEnumerable<LookupDto<CustomerLookup>> result =
                 await sut.LookupNonDeletedAsync(CancellationToken.None);
 
             result.Should().NotBeNull();
@@ -31,7 +33,7 @@ namespace Example.Examples
         {
             // ************ ARRANGE ************
 
-            var sut = CreateSut();
+            ICategorizedRepository<Customer, CustomerLookup> sut = CreateSut();
 
             await sut.InitializeCategoryIndexAsync(CancellationToken.None);
 
@@ -55,7 +57,7 @@ namespace Example.Examples
         {
             // ************ ARRANGE ************
 
-            var sut = CreateSut();
+            ICategorizedRepository<Customer, CustomerLookup> sut = CreateSut();
 
             // ************ ACT ****************
 
@@ -77,11 +79,11 @@ namespace Example.Examples
         {
             // ************ ARRANGE ************
 
-            var sut = CreateSut();
+            ICategorizedRepository<Customer, CustomerLookup> sut = CreateSut();
 
             await sut.InitializeCategoryIndexAsync(CancellationToken.None);
 
-            var aggregate = RandomCustomerWithOrders(10);
+            Customer aggregate = RandomCustomerWithOrders(10);
 
             // ************ ACT ****************
 
@@ -89,7 +91,7 @@ namespace Example.Examples
 
             // ************ ASSERT *************
 
-            var lookups =
+            IEnumerable<LookupDto<CustomerLookup>> lookups =
                 await sut.LookupNonDeletedAsync(CancellationToken.None);
 
             lookups.Any(l =>
@@ -98,7 +100,7 @@ namespace Example.Examples
                     l.PayLoad.NumberOfOrders == 10)
                 .Should().BeTrue();
 
-            var restoredAggregate =
+            Customer? restoredAggregate =
                 await sut.GetAggregateAsync(Key, CancellationToken.None);
 
             restoredAggregate.ShouldBeEquivalentTo(aggregate);
@@ -110,11 +112,11 @@ namespace Example.Examples
         {
             // ************ ARRANGE ************
 
-            var sut = CreateSut();
+            ICategorizedRepository<Customer, CustomerLookup> sut = CreateSut();
 
             await sut.InitializeCategoryIndexAsync(CancellationToken.None);
 
-            var aggregate = RandomCustomerWithOrders();
+            Customer aggregate = RandomCustomerWithOrders();
 
             await sut.UpsertAsync(Key, aggregate, CancellationToken.None);
 
@@ -147,11 +149,11 @@ namespace Example.Examples
         {
             // ************ ARRANGE ************
 
-            var sut = CreateSut();
+            ICategorizedRepository<Customer, CustomerLookup> sut = CreateSut();
 
             await sut.InitializeCategoryIndexAsync(CancellationToken.None);
 
-            var aggregate = RandomCustomerWithOrders();
+            Customer aggregate = RandomCustomerWithOrders();
 
             await sut.UpsertAsync(Key, aggregate, CancellationToken.None);
 
@@ -159,7 +161,7 @@ namespace Example.Examples
 
             await sut.DeleteAsync(Key, CancellationToken.None);
 
-            var restoredAggregate = await sut.GetAggregateAsync(Key, CancellationToken.None);
+            Customer? restoredAggregate = await sut.GetAggregateAsync(Key, CancellationToken.None);
 
             // ************ ASSERT *************
 
@@ -173,18 +175,18 @@ namespace Example.Examples
 
             await InitializeCategoryIndexInDatabase();
 
-            var sut1 = CreateSut();
+            ICategorizedRepository<Customer, CustomerLookup> sut1 = CreateSut();
 
-            var sut2 = CreateSut();
+            ICategorizedRepository<Customer, CustomerLookup> sut2 = CreateSut();
 
-            var aggregate = RandomCustomerWithOrders();
+            Customer aggregate = RandomCustomerWithOrders();
 
             // ************ ACT ****************
 
             await sut1.UpsertAsync(Key, aggregate, CancellationToken.None);
 
-            var restoredAggregateFromSut1 = await sut1.GetAggregateAsync(Key, CancellationToken.None);
-            var restoredAggregateFromSut2 = await sut2.GetAggregateAsync(Key, CancellationToken.None);
+            Customer? restoredAggregateFromSut1 = await sut1.GetAggregateAsync(Key, CancellationToken.None);
+            Customer? restoredAggregateFromSut2 = await sut2.GetAggregateAsync(Key, CancellationToken.None);
 
             // ************ ASSERT *************
 
@@ -199,9 +201,9 @@ namespace Example.Examples
 
             await InitializeCategoryIndexInDatabase();
 
-            var sut1 = CreateSut();
+            ICategorizedRepository<Customer, CustomerLookup> sut1 = CreateSut();
 
-            var aggregate = RandomCustomerWithOrders();
+            Customer aggregate = RandomCustomerWithOrders();
 
             await sut1.UpsertAsync(Key, aggregate, CancellationToken.None);
 
@@ -211,9 +213,9 @@ namespace Example.Examples
 
             // ************ ASSERT *************
 
-            var sut2 = CreateSut();
+            ICategorizedRepository<Customer, CustomerLookup> sut2 = CreateSut();
 
-            var restoredAggregate = await sut2.GetAggregateAsync(Key, CancellationToken.None);
+            Customer? restoredAggregate = await sut2.GetAggregateAsync(Key, CancellationToken.None);
 
             restoredAggregate.ShouldBeEquivalentTo(aggregate);
         }

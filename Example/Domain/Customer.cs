@@ -23,9 +23,14 @@ namespace Example.Domain
             _orders.Add(order);
         }
 
+        public void UpdateName(string name)
+        {
+            Name = name;
+        }
+
         public Guid Id { get; }
 
-        public string Name { get; }
+        public string Name { get; private set; }
 
         public IReadOnlyCollection<Order> Orders => _orders;
 

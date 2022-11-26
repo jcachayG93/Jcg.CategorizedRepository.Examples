@@ -43,6 +43,28 @@ public abstract class TestBase
         await sut.CommitChangesAsync(CancellationToken.None);
     }
 
+    protected void AddRandomAggregateToDatabase(out RepositoryIdentity key, out Customer aggregate)
+    {
+        var thisKey = new RepositoryIdentity(Guid.NewGuid());
+
+        var thisAggregate = RandomCustomerWithOrders(10);
+
+        var task = Task.Run(async () =>
+        {
+            var sut = CreateSut();
+
+            await sut.UpsertAsync(thisKey, thisAggregate, CancellationToken.None);
+
+            await sut.CommitChangesAsync(CancellationToken.None);
+        });
+
+        Task.WaitAll(task);
+
+        key = thisKey;
+
+        aggregate = thisAggregate;
+    }
+
     protected Customer RandomCustomerWithOrders(int numberOfOrders = 0)
     {
         var result = new Customer(Guid.NewGuid(), Guid.NewGuid().ToString());
@@ -54,6 +76,7 @@ public abstract class TestBase
 
         return result;
     }
+    
 
     private readonly RepositoryIdentity _categoryKey;
 
