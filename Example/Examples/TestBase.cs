@@ -16,7 +16,11 @@ public abstract class TestBase
         _dbClient = new TransactionalDatabaseClient(db);
 
         _categoryKey = new(Guid.NewGuid());
+
+        Key = new RepositoryIdentity(Guid.NewGuid());
     }
+
+    protected RepositoryIdentity Key { get; }
 
     protected ICategorizedRepository<Customer, CustomerLookup> CreateSut()
     {
@@ -30,7 +34,7 @@ public abstract class TestBase
             lookupMapper);
     }
 
-    protected Customer RandomCustomer(int numberOfOrders)
+    protected Customer RandomCustomerWithOrders(int numberOfOrders = 0)
     {
         var result = new Customer(Guid.NewGuid(), Guid.NewGuid().ToString());
 
